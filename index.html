@@ -1,0 +1,1330 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta name="description" content="A Javascript app to display the slope field for an ordinary differential equation, or the direction field (phase plane) for a two-variable system, and plot numerical solutions (e.g. Euler and RK4)"/>
+  <meta property="og:title" content="Slope and Direction Fields for Differential Equations" />
+  <meta property="og:description" content="A Javascript app to display the slope field for an ordinary differential equation, or the direction field (phase plane) for a two-variable system, and plot numerical solutions (e.g. Euler and RK4)"/>       
+  <meta property="og:image" content="https://www.bluffton.edu/~nesterd/java/images/slopefield.png" />      
+  <meta property="og:url" content="https://www.bluffton.edu/~nesterd/java/slopefields.html" />
+  <meta charset="UTF-8">
+  <meta name="google" content="notranslate">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Slope and Direction Fields for Differential Equations</title>
+  <link rel="stylesheet" type="text/css" href="../nester.css" />
+  <link rel="stylesheet" type="text/css" href="css/smoothness/jquery-ui.css">
+  <script type="text/javascript" src="js/jquery-1.10.2.min.js"></script>
+  <script type="text/javascript" src="js/jquery-ui-1.12.1/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="myscripts2.js"></script>
+  <script type="text/javascript" src="js/mathfns.js"></script>
+  <script type="text/javascript" src="js/algebra.js"></script>
+  <script type="text/javascript" src="js/fractions.js"></script>
+  <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="js/flot/excanvas.js"></script><![endif]-->
+  <script type="text/javascript" src="js/flot/jquery.flot.min.js"></script>
+  <script type="text/javascript" src="js/flot/jquery.flot.canvas.js"></script>
+<style>
+.ui-tabs .ui-tabs-nav li a {
+padding: 0 1em;
+height: 20px;
+font-size:11pt;
+}
+
+.input-OK { width:250px; font-size=10pt; }
+.input-BAD { background-color:pink; }
+.short-input-OK { width:60px; text-align:center; font-size=12pt; }
+p.info { margin-bottom: 10px; }
+div.hide { display:none; }
+
+thead.fixedHeader th {
+width:80px;
+text-align:center;
+}
+th.wide {
+width:160px;
+}
+th#arrow {
+width:40px;
+}
+th#timeH {
+width:40px !important;
+}
+.time {
+width:40px !important;
+}
+tbody.scrollContent td {
+width:80px;
+text-align:right;
+}
+td.wide {
+width:160px;
+}
+div.tableContainer {
+clear: both;
+width: 600px;
+}
+img#thumb, img#thumbClip {
+height:30px;
+width:40px;
+background-color: #e0e0ff;
+}
+a.thumb:hover {
+background-color: #ffffff;
+}
+#thumb:hover {
+background-color: #a0a0f0;
+}
+.hidden {
+display: none;
+}
+.invisible {
+visibility: hidden;
+}
+.toggle {
+background-color: #9045E0; //#7521C7
+}
+.ellipses {
+//width:40px;
+}
+div.ctrl-right {
+float: right;
+margin: 0px;
+}
+div.ctrl-left {
+float: left;
+margin: 0px;
+}
+div.ctrl-center {
+text-align: center;
+margin: 0px;
+}
+.spinlabel {
+font-size: 12px;
+cursor: ew-resize !important;
+border: 5px solid #f3f3f3 !important;
+background: #f3f3f3 !important;
+}
+.ui-slider-handle {
+display: none;
+}
+.spinInput {
+width:25px;
+font-size: 0.7em !important;
+}
+</style>
+</head>
+<body>
+
+<table>
+<tr>
+  <td colspan=2>
+    <div id="tabs">
+      <ul>
+	<li><a href="#tabs-1">One ODE</a></li>
+	<li><a href="#tabs-2">System</a></li>
+	<li><a href="#tabs-4">Polar ODE</a></li>
+	<li><a href="#tabs-3">Polar system</a></li>
+	</ul>
+      <div id="tabs-1">
+	<p><em><span id="ODE1">dy/dx</span></em> = <input type="text" class="input-OK" id="fn0" onChange="chgFunction(this)" value="2y+1"><br/><br/>
+	  Variables: <select id="ODEvars" onchange="updateODESYS(this.value)">
+	    <option value="x,y" selected>dy/dx</option>
+	    <option value="t,y">dy/dt</option>
+	    <option value="t,x">dx/dt</option>
+	    </select></p>
+	</div>
+      <div id="tabs-2">
+	<p><em><span id="SYS1">dx/dt</span></em> = <input type="text" class="input-OK" id="fn1" onChange="chgFunction(this)" value="x+y"><br/>
+	  <em><span id="SYS2">dy/dt</span></em> = <input type="text" class="input-OK" id="fn2" onChange="chgFunction(this)" value="x*y-1"><br/><br/>
+	  Variables: <select id="SYSvars" onchange="updateODESYS(this.value)">
+	    <option value="t,x,y" selected><em>y</em> vs. <em>x</em></option>
+	    <option value="t,y,v"><em>v</em> vs. <em>y</em></option>
+	    <option value="t,r,f"><em>f(oxes)</em> vs. <em>r(abbits)</em></option>
+	    <!--option value="t,v,y"><em>y</em> vs. <em>v</em></option-->
+	    </select></p>
+	</div>
+      <div id="tabs-4">
+	<p><em>dr/d&theta;</em> = <input type="text" class="input-OK" id="fn5" onChange="chgFunction(this)" value="sqrt(r)*sin(3a)"><br/><br/>
+                Enter &theta; as "@" or "theta" or "a" (for "angle")</p>
+	</div>
+      <div id="tabs-3">
+	<p><em>dr/dt</em> = <input type="text" class="input-OK" id="fn3" onChange="chgFunction(this)" value="6cos(6a)/r"><br/>
+	  <em>d&theta;/dt</em> = <input type="text" class="input-OK" id="fn4" onChange="chgFunction(this)" value="1"><br/><br/>
+                Enter &theta; as "@" or "theta" or "a" (for "angle")</p>
+	</div>
+    </div>
+    </td>
+  <td rowspan=12><div id="plotdiv"></div></td>
+</tr>
+<tr>
+  <td>
+    &emsp;<input type="text" class="short-input-OK" id="xLow" onChange="changeLimits(this)" value="0">
+    &le; <i><span id="indepvar1">x</span></i> &le;
+    <input type="text" class="short-input-OK" id="xHigh" onChange="changeLimits(this)" value="2">
+    </td>
+  <td>
+    with <input id="nx" name="nx" maxlength="2" value="20" class="spinInput"><label for="nx" class="spinlabel">segments</label>
+    </td>
+</tr>
+<tr>
+  <td>
+    &emsp;<input type="text" class="short-input-OK" id="yLow" onChange="changeLimits(this)" value="0">
+    &le; <i><span id="depvar1">y</span></i> &le;
+    <input type="text" class="short-input-OK" id="yHigh" onChange="changeLimits(this)" value="60">
+    </td>
+  <td>
+    with <input id="ny" name="ny" maxlength="2" value="15" class="spinInput"><label for="ny" class="spinlabel">segments</label>
+    </td>
+</tr>
+<tr><td colspan=2><hr/></td></tr>
+<tr>
+  <td colspan=2>
+    <p><select id="method" onchange="changeMethod();changeCurves();">
+	<option value="euler" selected>Euler</option>
+	<option value="impeuler">Improved Euler (Heun)</option>
+	<option value="midpt">Midpoint</option>
+	<option value="rk4">Runge-Kutta (RK4)</option>
+	<option value="rk38">Runge-Kutta 3/8 rule</option>
+	</select>
+      with <em>h</em> = <input type="text" class="short-input-OK" id="stepSize" onchange="changeCurves()" value="0.1">
+      <span title="see 'How to use this page' for explanation"><input type="checkbox" id="switching" onchange="changeCurves()"><label for="switching">switching</label></span>
+      </p>
+    </td>
+<tr>
+  <td colspan=2>
+    <p style="line-height: 170%;">To specify initial values for solution curves, either:<br/>
+      &emsp;&bull; enter (<em><span id="indepvar2">x</span></em>,<em><span id="depvar2">y</span></em>) = (
+      <input type="text" class="short-input-OK" id="xcoord" value="0">,
+      <input type="text" class="short-input-OK" id="ycoord" value="1"> )
+      <input type="button" value="submit" onclick="addEnteredPoint()" /><br/>
+      &emsp;&bull; or click on the graph: <span id="mousecoords"></span></p>
+    <p style="text-align:center">&emsp;<input type="button" value="clear all curves" onclick="clearPoints()" /></p>
+    </td>
+</tr>
+<tr>
+  <td colspan=2 style="text-align:center">
+    <select id="presets" size=3 onchange="settings(this.selectedIndex)">
+      <option>presets loading ...</option>
+      </select>
+    </td>
+</tr>
+<tr>
+  <td colspan=2 style="width:400px;">
+    <hr/><p>Save settings with <a href="" id="thisPageLinkShort" title="link to recreate current tab">link 1 (current tab)</a> or <a href="" id="thisPageLinkLong" title="link to recreate all tabs">link 2 (all tabs)</a>.
+      <br/>To save the image, right-click this thumbnail: <a id="thumbLink" href="" target="_blank" class="thumb"><img src="" alt="[current graph]" id="thumb"></a>.
+      <!--<br/>To copy to clipboard, click here:
+	  <span class="copyable"><img id="thumbClip" src="" alt="Copy current graph to clipboard"/></span>
+	  -->
+      </td>
+</tr>
+</table>
+
+<div id="accordion">
+<h3>Numerical solution tables, and timeplots (for systems)</h3>
+<div id="tables">
+  <table>
+    <tr><td>Initial point: <select id="ptlist" onchange="showTable(this.selectedIndex)"></select></td>
+      <td rowspan=2><div id="timeplotdiv""></div></td></tr>
+					  </tr>
+<tr><td rowspan=2><div id="tableContainer" class="tableContainer">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" class="scrollTable" id="soltable">
+	<thead style="display:block" class="fixedHeader" id="tblHead">
+	  <tr>
+	    <th>blah</th>
+	    </tr>
+	  </thead>
+	<tbody style="display:block;height:400px;overflow:auto;width:100%" class="scrollContent" id="tblBody">
+	  </tbody>
+	</table>
+      </div></td></tr>
+<tr>
+  <td nowrap id="timeplotcontrols">
+    <div class="ctrl-left">
+      <span title="If checked, phase plane curves only show results for t&gt;0.
+If unchecked, they are shown for positive and negative t.">
+<input type="checkbox" checked id="tzero" onchange="lockUnlockT(this)"/> 
+<label for="tzero">&nbsp;lock <em>t</em>=0 on the left</label>
+</span>
+      </div>
+    <div class="ctrl-right">
+      ZOOM <button onclick="zoom(-1)">&ndash;</button>&emsp;<button onclick="zoom(1)">+</button>
+      </div>
+    <div class="ctrl-center invisible" id="pan">
+      <button onclick="pan(-1)">&lt;&lt;left</button>&emsp;<button onclick="pan(1)">right&gt;&gt;</button>
+      </div>
+    </td>
+  </tr>
+</table>
+</div>
+
+<h3>How to use this page</h3>
+<div id="basicinfo">
+  <p class="info">Users enter a first-order ODE in the form <em>dy/dx</em> = <em>f</em>(<em>x</em>,<em>y</em>), or a system in the form <em>dx/dt</em> = <em>f</em>(<em>t</em>,<em>x</em>,<em>y</em>) and <em>dy/dt</em> = <em>g</em>(<em>t</em>,<em>x</em>,<em>y</em>). (Note: A limited number of alternative variables can be chosen, to make it easier to adapt to different applications or textbook conventions.)</p>
+  <p class="info">For ODEs, a slope field is displayed; for systems, a direction field is shown.(In the case of non-autonomous systems&mdash;that is, where either <em>dx/dt</em> or <em>dy/dt</em> depends on <em>t</em>&mdash;the direction field shown is for <em>t</em> = 0.)</p>
+  <p class="info">By specifying initial values, users can see approximate solution curves, with several choices for the solution method (click links to read more at Wikipedia):</p>
+  <ul>
+    <li><a href="https://en.wikipedia.org/wiki/Euler_method">Euler method</a></li>
+    <li><a href="https://en.wikipedia.org/wiki/Heun%27s_method">Improved Euler (Heun's) method</a></li>
+    <li><a href="https://en.wikipedia.org/wiki/Midpoint_method">Midpoint method</a></li>
+    <li><a href="https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods#The_Runge.E2.80.93Kutta_method">Runge-Kutta</a> (both RK4 and the "3/8 rule")</li>
+    </ul><br/>
+  <p class="info">The "switching" option next to the choice of method is an adaptation that produces better solution plots in some cases. It affects all of the numerical methods for ODEs (it has no effect on solutions for systems). Specifically: If, at any point, |<em>dy/dx</em>| &gt; 3 (i.e., if the tangent lines get too steep), the method switches the roles of <em>x</em> and <em>y</em>. For example, for the DE <em>dy/dx</em> = -<em>y</em>/</em>x</em> (a circle), here are solution curves for RK4 with <em>h</em>=0.05 without switching (left) and with switching (right):</p>
+<img src="images/switchingExample.png" alt="the effect of choosing the 'switching' option"/>
+</div>
+
+<h3>How to enter expressions</h3>
+<div id="howToEnter">
+  <p>For the most part, expressions are entered using standard mathematical notation, with a few <i>caveats</i>:</p>
+  <ul><li>Multiplication is implied in expressions like:
+      <ul><li><tt>2x(3x^2-1)</tt></li>
+	<li><tt>cos(x)sin(x)</tt></li>
+	<li><tt>(x+1)(x-2)</tt></li>
+	<li><tt>ln(4)4^x</tt></li>
+	<li><tt>x|x+1|</tt></li>
+	<li><tt>x cos(x)</tt> (There <u>must</u> be a space between <tt>x</tt> and <tt>cos</tt>.)</li>
+	</ul>
+      </li>
+    <li>Closing parentheses are not optional (unlike, say, on TI-84 graphing calculators).</li>
+    <li><u>All</u> functions must have parentheses&mdash;for example, use <tt>sin(x)</tt> rather than <tt>sin x</tt>, and <tt>ln(|x|)</tt> rather than <tt>ln|x|</tt>.</li>
+    <li>Exponentiation (like 7<sup><i>x</i></sup>) can be entered as either <tt>7^x</tt> or <tt>power(7,x)</tt>, and
+      <i>e<sup>x</sup></i> can be entered as <tt>e^x</tt> or <tt>exp(x)</tt>. (Note that <tt>e^2x</tt> is <tt>e<sup>2</sup>x</tt>.)</li>
+    <li>The inverse trig functions should be entered as <tt>atan</tt>, <tt>asin</tt>, and <tt>acos</tt> (and similarly for inverse hyperbolic trig). However, some alternate notations are also accepted (for example, <tt>arctan</tt>). </li>
+    <li>Absolute values can be entered as either <tt>|x|</tt> or <tt>abs(x)</tt>.</li>
+    <li>For numerical input (such as the coordinates for an initial value), fractions and complex expressions are allowed; for example, you can enter <tt>5/3</tt> instead of <tt>1.6666666667</tt>, or <tt>sqrt(2)</tt>, or <tt>pi/2</tt>.</li>
+    <li>In addition to many standard functions (and some exotic ones), the following functions can be helpful for some DE modeling problems:
+      <ul><li><tt>if(condition, true-value, false-value)</tt> or <tt>when(condition, true-value, false-value)</tt>. This can be used to create piecewise-defined functions, such as <tt>when(x&gt;0,x^2,y)</tt>.</li>
+	<li><tt>step(x,a)</tt> is the unit step function, equivalent to <tt>when(x&gt;a,1,0)</tt>.
+The value of <tt>a</tt> defaults to 0 if omitted.</li>
+	<li><tt>delta(x,k)</tt> approximates the <a href="https://en.wikipedia.org/wiki/Dirac_delta_function">Dirac Delta function</a> using the Gaussian function exp(-(x/k)<sup>2</sup>)/(|k|&radic;&pi;). The value of <tt>k</tt> defaults to 0.01 if omitted.</li></ul></li>
+    </ul>
+</div>
+
+<h3>About this page: Acknowledgments and release history</h3>
+<div id="technical">
+  <p class="info">I created this page as a replacement for the very nice <a href="http://alamos.math.arizona.edu/~rychlik/JOde/">JODEapplet</a> by Marek Rychlik. I had used his Java applet for many years in my Calculus 2 and DE classes, but began to have issues with unstable Java installations and nuisance security alerts. (In particular, I never know if a particular classroom's computer will be able to run it.) This page is written in JavaScript (not Java), so it does not have those compatibility and security issues. In addition, your Web browser's "zoom" features will work with this page (often not the case with Java), so you can increase the display size if you need to do a demonstration for a large class.</p>
+  <p class="info">Special thanks to Larry Friesen at <a href="http://www.butlercc.edu/">Butler Community College</a>, who suggested many improvements to this page, and (with his colleagues and students) tested it extensively.</p>
+  <p class="info"><b>Condensed release history:</b> (September 3, 2014) First release. Tested on Chrome (fairly extensively), Firefox (less), and Explorer (minimally). Reasonably functional, but incomplete. (September 7) Added numerical tables and extended addresses (with updating link to current state of the page). (September 9) Added the option for selectable "presets." The "BDH" presets are exercises from <em>Differential Equations</em>, Blanchard/Devaney/Hall, 3rd edition (mostly). (September 11) Tweaked some features, and added a couple of additional methods.</p>
+  <p class="info">(October 9, 2014) Added support for systems with two dependent variables. (October 16) Improved support for systems; they are now included in the link, and the solution tables are formatted better. (October 27) Some system presets included. You can also save the graph as a PNG file, or open it in a new window, using the given link, or by right-clicking on the link. You can also copy the image to the clipboard (though perhaps not on all systems). Note: In Firefox, "View image" will open the image IN THE CURRENT WINDOW.</p>
+  <p class="info">(February 25, 2016) Create time plots for systems, and allow limited changes to the names of the independent and dependent variables (e.g., x and y, or y and t, etc.)</p>
+  <p class="info">(March 11, 2016) Recognizes when an initial value is an equilibrium point; zooming/panning and tracing (via hovering) on timeplots. Phase plane curves default to "<em>t</em>&gt;0" only; this is controlled by the "lock <em>t</em>=0" option under the timeplot.</p>
+  <p class="info">(February 1, 2017) When a link includes initial-value points, the last of these points shows up in the input boxes.</p>
+  <p class="info">(March 1, 2017) Added an explanation of the "switching" option (see "How to use this page").</p>
+  <p class="info">(October 2, 2017) Added descriptions of <tt>if/when</tt>, <tt>step</tt>, and <tt>delta</tt> functions. Overhauled to remove MooTools dependency.</p>
+  <p class="info">(February 11, 2018) Minor bug fixes, and added (beta) support for polar-coordinate ODEs and systems.</p>
+  <p class="info">(November 5, 2018) Fixed some glitches in the "preset" menu.</p>
+  <p class="info">TODO: Improve support for mobile devices, iPads, etc. Display the initial point for each curve. For non-autonomous systems, allow user to select the value of <i>t</i> for which the direction field is displayed. Add more methods, including one or more adaptive methods which adjust the size of <em>h</em>.</p>
+  <hr/>
+  <p>The contents of this page are &copy; 2018 Darryl Nester. It is available to anyone who wishes to use it (like most things on the Internet).Please send me an email if you have found it to be useful, or if you have suggestions. (In particular, if you have a "preset" you would like to suggest, email me the link above.)</p>
+  </div>
+</div>
+<script type="text/javascript">
+
+var presets = [], presetsIN = false, defaultPreset = 'x+y&-4,4,20&-3,3,15&euler,false,0.1';
+var xmin, xmax, ymin, ymax, ytop, ybottom, range, tmin, tmax, tcount, selectObj;
+var ready, method, switching, table, _fn = [];
+var pointList = [[],[],[],[]]; // list of points for which to produce curves
+var curveData = []; // data for each curve
+var slopeData = []; // data for tangent segments
+var timeplotData = [];
+var options;
+var MODE = 0; // ode
+//var ODE = 'x,y', SYS = 't,x,y';
+var varList = ['x,y', 't,x,y', 't,r,θ', 'r,θ'];
+var INDEP, DEP;
+var lockT = true;
+var METHOD = 'euler', K, f, ff;
+var COLS, HIDDEN = 0, HIDESTATE = true;
+
+var colorList = ['Black', 'Black', // axes
+ '#808080', //'White', // slope segments
+ 'Red', 'Green', 'Blue', 'DarkMagenta', 'DarkOrange', 'Yellow' ]; // curves (TODO - add more to this list)
+
+var bgcolorList = ['#FF9999', '#99CC99', '#9999FF', '#D199D1', '#ffd199', '#FFFF99' ];
+
+
+$(function() {
+$( "#accordion" ).accordion({
+header: "h3",
+active: false,
+collapsible: true,
+heightStyle: "content"
+});
+});
+
+$(document).ready(function() {
+$(window).load(function() {
+    //stackoverflow.com/questions/3514784
+//var isMobile = window.matchMedia("only screen and (max-width: 760px)");
+var isMobile = window.matchMedia("max-width: 760px");
+
+setPage("<a href=index.html> Java[Script]</a>: Slope and Direction Fields",
+'<a href="http://jquery.com">jQuery</a> and <a href="http://www.flotcharts.org/">Flot</a>');
+var wid = 600, ht = 450;
+if (navigator.userAgent.match(/iPad/i)) {
+wid = 500;
+ht = 500;
+}
+if (isMobile.matches) {
+wid = 400;
+}
+var sheet = document.createElement('style')
+sheet.innerHTML = 'div#plotdiv { height:' + ht + 'px; width:' + wid + 'px; }\n' + 
+'div#timeplotdiv { height:' + (ht-50) + 'px; width:' + wid + 'px; }\n' + 
+'td#timeplotcontrols { height:50px; width:' + wid + 'px; }\n';
+document.body.appendChild(sheet);
+
+$( "#tabs" ).tabs({ heightStyle: "auto", activate: tabSwitch });
+
+initSpinSlider("nx", {
+spin: changeSlopes,
+//stop: spinstop,
+slidestop: changeSlopes,
+change: changeSlopeInput,
+min: 5,
+max: 30 }, {
+param: 'nx'
+});
+initSpinSlider("ny", {
+spin: changeSlopes,
+slidestop: changeSlopes,
+change: changeSlopeInput,
+min: 5,
+max: 30 }, {
+param: 'ny'
+});
+
+$("#plotdiv").bind("plotclick", addClickedPoint);
+$("#plotdiv").bind("plothover", showCoords);
+// TODO: Check IE compatibility; see this:
+// https://forum.jquery.com/topic/chrome-can-t-access-local-xml-using-ajax
+// ?flags=4&drdt=-r%5E2%20sqrt(1-1/r%5E2)&dadt=1&x=-4,4,20&y=-3,3,15&method=rk4&h=0.01&pts2=%5B2,0%5D,%5B2,1%5D,%5B2,2%5D
+$.ajax({
+type: "GET",
+url: "slopefield_presets_beta.xml",
+dataType: "xml",
+success: function(xml) {
+$(xml).find('prob').each(function(){
+var obj = $(this);
+var pts =[];
+var addObj = function(name) { return (obj.find(name) ? '&' +name + '=' + obj.find(name).text() : ''); };
+obj.find('points').each(function(){
+$(this).find('point').each(function(){
+pts.push($(this).text());
+});
+});
+if (obj.find('flags').text()) {
+var f = (obj.find('flags').text()*1 >> 1)==1;
+presets.push({
+name: obj.find('name').text(),
+settings: 'flags=' + obj.find('flags').text()
++ addObj('ODE')
++ addObj('SYS')
++ addObj('dydx')
++ addObj('dxdt')
++ addObj('dydt')
++ addObj('drdt')
++ addObj('dadt')
++ addObj('x')
++ addObj('y')
++ addObj('method')
++ addObj('h')
++(pts.length ? '&pts' + (f ? '1=' : '0=') + pts.join(',') : '')
+});
+} else {
+presets.push({
+name: obj.find('name').text(),
+settings: obj.find('fn').text()
++'&'+ obj.find('x').text()
++'&'+ obj.find('y').text()
++'&'+ obj.find('method').text()
++(pts.length ? '&' + pts.join(';') : '')
+});
+}
+});
+presetsIN = true;
+},
+error: function (xhr, ajaxOptions, thrownError){
+console.log('XML presets failed to load (status=' + xhr.status + ', error=' + thrownError + ')');
+presetsIN = true;
+}
+});
+ready = false;
+selectObj = document.getElementById('ptlist');
+
+// Tried the method described at
+// http://stackoverflow.com/questions/7208786/how-to-style-the-option-of-a-html-select
+// but it failed to fire the "onchange" event (and had a few other issues).
+        changeIndepDepVars();
+finishStartup();
+});
+});
+
+
+// this function waits until the presets are loaded from the XML file, then completes the startup
+function finishStartup() {
+if (!presetsIN) {
+setTimeout(finishStartup,200);
+} else {
+var option, tmp = document.getElementById('presets');
+if (presets.length) {
+tmp.remove(0);
+for (var i=0; i<presets.length; i++) {
+				option = document.createElement("option");
+				option.text = presets[i].name;
+				tmp.add(option);
+				}
+				} else {
+				tmp.disabled = true;
+				tmp.options[0].text = '(presets did not load)';
+				tmp.size = 1;
+				}
+				// Note: decodeURI is almost the same as unescape, but it does NOT decode/encode "#"
+				// Additionally, if a preset includes "#", it is considered part of the anchor, not part of the search
+				// 6/16/2016: it also does not decode commas(!), which sometimes get encoded when embedding links in FaceBook, etc.
+				tmp = decodeURI(document.location.search).replace(/%23/g,'#') + document.location.hash;
+				tmp = unescape(tmp || '?' + defaultPreset); // add 6/16/2016
+				settings(tmp.slice(1));
+				}
+}
+
+/*
+s can be one of five formats:
+				* [old] x-y^3&0&2&20&0&6&15&0&0&0.15&[0,2]&[-1,2.5]
+				that is, _fn_&_xmin_&_xmax_&_nx_&_ymin_&_ymax_&_ny_&_method_&_switching_&_h_&_optional_list_of_points_
+				* [old] x-y^3&0,2,20&-1,1,15&euler,true,0.1&[0,0.1];[1,5]
+				that is, _fn_&_xmin_,_xmax_,_nx_&_ymin_,_ymax_,_ny_&_method_,_switching_,_h_&_optional_list_of_points_
+				* PRESET_NAME
+				* flags=1&dydx=x+y&dxdt=x+y&dydt=x*y-1&x=-4,4,20&y=-3,3,15&method=euler&h=0.1&pts1=[0,1],[-1,2]
+				* ODE=x,y&SYS=t,x,y&flags=1&dydx=x+y&dxdt=x+y&dydt=x*y-1&x=-4,4,20&y=-3,3,15&method=euler&h=0.1&pts1=[0,1],[-1,2]
+				
+"method" can be either the index or the name (e.g., "0" or "euler")
+"switching" can be 0/1 or false/true
+*/
+function settings(s) {
+				var i, j, key, el;
+				if (typeof s == 'number') s = presets[s].settings;
+				updateODESYS('x,y');// reset variables to default
+				updateODESYS('t,x,y');
+				pointList = [[],[],[],[]];
+				s = s.split('&');
+				if (s.length == 1) { // find preset
+				s = s[0];
+				for (var i=0; i < presets.length; i++) {
+						  if (presets[i].name == s) {
+						  s = presets[i].settings;
+						  break;
+						  }
+						  }
+						  if (i==presets.length) {
+						  console.log('Invalid preset name: ' + s);
+						  s = defaultPreset;
+						  }
+						  s = s.split('&');
+						  }
+						  if (s.length <= 5) { // latter format --> convert to former
+						  s[1] = s[1].split(',');
+						  s[2] = s[2].split(',');
+						  s[3] = s[3].split(',');
+						  if (s[4]) s[4] = s[4].split(';');
+						  s = [].concat.apply([], s);
+						  }
+						  if (s.join().indexOf('flags') == -1) { // old style parameters
+						  $( "#tabs" ).tabs( "option", "active", 0 );
+										       key = ['fn0', 'xLow', 'xHigh', 'nx', 'yLow', 'yHigh', 'ny'];
+										       while (key.length) {
+										       setFormValue(key.shift(), s.shift());
+										       }
+										       if (isNaN(s[0]))
+										       setFormValue('method', s.shift());
+										       else
+										       $('#method')[0].selectedIndex = s.shift();
+										       s[0] = (isNaN(s[0]) ? s[0]=='true' : !!(1*s[0]));
+										       $('#switching')[0].checked = s.shift();
+										       setFormValue('stepSize', s.shift());
+										       while (s.length)
+										       pointList[0].push(eval(s.shift()));
+										       } else {
+										       var activeTab = -1;
+										       for (i=0; i<s.length; i++) {
+										       s[i] = s[i].split('=');
+										       if (s[i][0].indexOf('pts')==0) {
+										       var ptsTab = 1 * s[i][0].slice(-1);
+										       eval('pointList[ptsTab] = [' + s[i][1] + ']');
+										       if (activeTab == ptsTab) {
+										       var lastPt = pointList[ptsTab];
+										       lastPt = lastPt[lastPt.length-1];
+										       $('#xcoord')[0].value = lastPt[0];
+										       $('#ycoord')[0].value = lastPt[1];
+										       }
+										       } else if (s[i][0]=='flags') {
+                var f = s[i][1] * 1;
+                $('#switching')[0].checked = (f % 2 == 1);
+                $( "#tabs" ).tabs( "option", "active", activeTab = f >> 1 );
+		} else if (s[i][0]=='ODE' || s[i][0]=='SYS') {
+		updateODESYS(s[i][1]);
+		} else if (key = settingsDictionary[s[i][0]]) {
+		if (key instanceof Array) {
+		s[i] = s[i][1].split(',');
+		for (j=0; j<key.lengthrdt: 'fn3',
+		dadt: 'fn4',
+		drda: 'fn5',
+		x: ['xLow','xHigh','nx'],
+		y: ['yLow','yHigh','ny'],
+		method: 'method',
+		h: 'stepSize' };
+
+function updateLink() {
+var linkShort, linkLong, flags = 0, i, j, tmp, tmp2;
+flags = ($( "#tabs" ).tabs( "option", "active" ) << 1) + ($('#switching')[0].checked ? 1 : 0);
+// added 2/15/16 - to allow for variable changes
+linkShort = linkLong = 'flags=' + flags;
+if (varList[0] != 'x,y') {
+    linkLong += '&ODE=' + varList[0];
+        if (MODE == 0) linkShort += '&ODE=' + varList[0];
+	}
+	if (varList[1] != 't,x,y') {
+	    linkLong += '&SYS=' + varList[1];
+	        if (MODE == 1) linkShort += '&SYS=' + varList[1];
+		}
+		for (i in settingsDictionary) {
+		tmp = settingsDictionary[i];
+		if (tmp instanceof Array) {
+		tmp2 = [];
+		for (j=0; j<tmp.length; j++)
+		tmp2[j] = gmp2;
+		if (tmp.match('fn') && MODE != fnmode(1*tmp[2]))
+		    continue;
+		    linkShort += '&' + i + '=' + tmp2;
+		    }
+		    }
+		    if (pointList[0].length)
+		    linkLong += '&pts0=[' + pointList[0].join('],[') + ']'; 
+		    if (pointList[1].length)
+		    linkLong += '&pts1=[' + pointList[1].join('],[') + ']';
+		    if (pointList[2].length)
+		    linkLong += '&pts2=[' + pointList[2].join('],[') + ']';
+		    if (pointList[3].length)
+		    linkLong += '&pts3=[' + pointList[3].join('],[') + ']';
+		    if (pointList[MODE].length)
+		    linkShort += '&pts' + MODE +'=[' + pointList[MODE].join('],[') + ']';
+
+		    $("#thisPageLinkShort").attr('href', window.location.href.split('?')[0] + '?' + encodeURI(linkShort));
+		    $("#thisPageLinkLong").attr('href', window.location.href.split('?')[0] + '?' + encodeURI(linkLong));
+}
+/*function updateLink() {
+var link = '';
+link = getFormValue('fn0') + '&';
+link += $('xLow').value + ',' + $('xHigh').value + ',' + $('nx').value + '&' +
+$('yLow').value + ',' + $('yHigh').value + ',' + $('ny').value + '&' +
+$('method').value + ',' + $('switching').checked + ',' + $('stepSize').value;
+if (pointList.length)
+link += '&[' + pointList.join('];[') + ']'; 
+$("thisPageLink").href = document.location.href.split('?')[0] + '?' + link;
+}
+*/
+
+function tabSwitch(e, ui) {
+MODE = ui.newPanel[0].id.substr(-1) * 1 - 1;
+resetPoints();
+changeIndepDepVars();
+updateAll();
+}
+
+
+// entry: o is a jQuery object, or a string (id)
+function fixObj(o) {
+return (typeof(o) == "string" ? $('#' + o) : $(o));
+}
+
+function getFormValue(obj) {
+obj = fixObj(obj);
+return obj.value || (obj[0] ? obj[0].value : '');
+}
+// function getFormValue(obj) {
+// if (typeof(obj) == "string")
+// return $('#' + obj)[0].value;
+// return obj.value || (obj[0]? obj[0].value : '');
+// }
+
+// allows complex expressions such as "pi/2" or "e^2"
+// using the expression-evaluation capabilities of mathfns.js
+// return NaN if the expression is invalid
+// or includes a variable (x).
+function getNumValue(obj) {
+return evaluateExpr(getFormValue(obj));
+}
+
+function evaluateExpr(s) {
+var tmp = $cas.fixFn(s);
+return ($cas.badFn ? Number.NaN : fn(tmp, Number.NaN));
+}
+
+// function getNumValue(obj) {
+// var tmp = $cas.fixFn(getFormValue(obj));
+// return ($cas.badFn ? Number.NaN : fn(tmp, Number.NaN));
+// }
+
+function setFormValue(obj, v) {
+obj = fixObj(obj);
+if (obj.value)
+obj.value = v;
+else
+obj[0].value = v;
+}
+// function setFormValue(obj, v) {
+// if (typeof(obj) == "string")
+// $('#' + obj)[0].value = v;
+// else if (obj.value)
+// obj.value = v;
+// else
+// obj[0].value = v;
+// }
+
+// returns resolution in the form
+//  [ x-units per pixel, y-units per pixel ]
+function getResolution() {
+return [ (xmax - xmin) / $('#plotdiv').width(), range / $('#plotdiv').height() ];
+}
+
+function dist(p1, p2) {
+var dx = p1[0] - p2[0], dy = p1[1] - p2[1];
+return Math.sqrt(dx*dx+dy*dy);
+}
+
+// variable name changes are only permitted for tabs 1 and 2
+// polar DEs always use r and theta
+function updateODESYS(changeTo) {
+var changeVars = function(expr, oldv, newv) {
+var onevar = function(old, v, n) {
+n = '@' + n + '@';
+// special case: "theta" seems to break the "word boundary" detection
+// for regular expressions.
+//if (v=='θ') return old.replace(/θ/g,n);
+return old.replace(new RegExp('\\b' + v + '\\b', 'g'), n)
+.replace(new RegExp('(\\d)' + v, 'g'), '$1'+n);
+}
+var tmp = onevar( onevar(expr, oldv.charAt(0), 0), oldv.charAt(2), 1 );
+return tmp.replace(/@0@/g, newv.charAt(0))
+.replace(/@1@/g, newv.charAt(2));
+}
+
+if (changeTo.length == 3) {
+if (changeTo == varList[0]) return;
+$('#ODE1').html('d' + changeTo.charAt(2) + '/d' + changeTo.charAt(0));
+setFormValue('fn0', changeVars(getFormValue('fn0'), varList[0], changeTo));
+varList[0] = changeTo;
+if (MODE == 0)
+changeIndepDepVars();
+setFormValue('ODEvars', varList[0]); // make sure dropdown is in sync with current setting
+} else if (changeTo.length == 5) { // sometimes called with invalid argument
+if (changeTo == varList[1]) return;
+$('#SYS1').html('d' + changeTo.charAt(2) + '/dt');
+$('#SYS2').html('d' + changeTo.charAt(4) + '/dt');
+setFormValue('fn1', changeVars(getFormValue('fn1'), varList[1].slice(2), changeTo.slice(2)));
+setFormValue('fn2', changeVars(getFormValue('fn2'), varList[1].slice(2), changeTo.slice(2)));
+varList[1] = changeTo;
+if (MODE == 1)
+changeIndepDepVars();
+setFormValue('SYSvars', varList[1]); // make sure dropdown is in sync with current setting
+}
+    updateLink();
+}
+
+function changeIndepDepVars() {
+    var vars = varList[MODE].split(',');
+    if (vars.length == 3) vars.shift(); // drop "t"
+    INDEP = vars[0]; //(MODE ? SYS.charAt(2) : ODE.charAt(0));
+    DEP = vars[1]; //(MODE == 2 ? 'θ' : vars[1]); //(MODE ? SYS.charAt(4) : ODE.charAt(2));
+    $('#indepvar1').html(isPolar() ? 'x' : INDEP);
+    $('#depvar1').html(isPolar() ? 'y' : DEP);
+    $('#indepvar2').html(INDEP);
+    $('#depvar2').html(DEP);
+    tableHeader(); // change var names in top line of table
+    try { 
+    timeplotData[0].label = '<em>' + (isPolar() ? 'r' : INDEP) + '</em>';
+    timeplotData[1].label = '<em>' + (isPolar() ? 'θ' : DEP) + '</em>';
+    TIMEPLOT.setData(timeplotData);
+    TIMEPLOT.draw();
+    } catch(e) {}
+}
+
+//String.prototype.right = function(k) { return this.substr(Math.max(0,this.length - k - 1)); }
+
+function fnmode(which){
+    return [0,1,1,2,2,3][which];
+}
+
+function chgFunction(obj) {
+if (typeof(obj) == "number") obj = 'fn' + obj;
+if (typeof(obj) == "string") obj = $('#'+ obj);
+if (obj[0]) obj = obj[0];
+var which = obj.id.slice(-1) * 1;
+var thisMODE = fnmode(which);
+var f = getFormValue(obj);
+var fnvars = varList[thisMODE]; //.replace(/θ/,'a');
+if (thisMODE > 1) {
+    f = f.replace(/theta|@|\ba\b/g,'θ').replace(/(\d)a\b/g,'$1θ');
+        setFormValue(obj, f);
+	    f = f.replace(/θ/g, 'a');
+	        fnvars = (thisMODE == 3 ? 'a,r' : 't,r,a');
+		}
+		f = $cas.fixFn(f, fnvars.replace(/,/g,''));
+		//var f = $cas.fixFn(getFormValue(obj), (which == 0 ? ODE : SYS).replace(/,/g,''));
+		if ($cas.badFn) {
+		$(obj).addClass('input-BAD');
+		obj.title = $cas.badFn;
+		f = 'Number.NaN';
+		} else {
+		$(obj).removeClass('input-BAD');
+		obj.title = "";
+		}
+		eval('_fn[which] = function(' + fnvars + ') { with (Math) return ' + f + '; }');
+		updateAll();
+}
+
+function updateAll() {
+if (!ready) return;
+changeMethod();
+updateCurveData();
+updateNxNy();
+updateSlopeData();
+updateLink();
+redrawGraph();
+}
+
+// used to draw arrows for the phase plane
+var lastx, lasty, arrowflag=true;
+function arrow(ctx, x, y, radius, shadow) {
+if (arrowflag = !arrowflag){
+var dx = x - lastx, dy = y - lasty, scale = 3/Math.sqrt(dx*dx+dy*dy);
+ctx.beginPath();
+ctx.moveTo(x+dy*scale,y-dx*scale);
+ctx.lineTo(x+dx*3*scale,y+dy*3*scale);
+ctx.lineTo(x-dy*scale,y+dx*scale);
+ctx.closePath();
+ctx.fill();
+} else {
+lastx = x;
+lasty = y;
+}
+}
+
+var nx, ny;
+function updateNxNy() {
+    nx=getNumValue('nx');
+    ny=getNumValue('ny');
+}
+function updateSlopeData() {
+//var nx = getNumValue('nx'), ny = getNumValue('ny'), 
+var plotdata = [], x, y, dx, dy, slope, len;
+var delX = (xmax - xmin) / nx;// x units between each segment
+var delY = range / ny;// y units between each segment
+var res = getResolution();// [x units/pixel, y units/pixel]
+var radius = Math.min(delX/res[0], delY/res[1])/2;
+var pol, dr, dtheta;
+for (x = xmin + delX/2; x<xmax; x+= delX) {
+for (y = ymin + delY/2; y<ymax; y+= delY) {
+if (isSystem()) {
+    if (isPolar()) { // polar system
+                    pol = polarConvert(x,y);
+                    dr = _fn[3](0,pol[0],pol[1]);
+                    dtheta = _fn[4](0,pol[0],pol[1]);
+                    dx = ( dr * Math.cos(pol[1]) - y * dtheta )*res[1];
+                    dy = ( dr * Math.sin(pol[1]) + x * dtheta )*res[0];
+		    } else { // regular system
+		    dx = _fn[1](0,x,y)*res[1];
+		    dy = _fn[2](0,x,y)*res[0];
+		    }
+		    len = Math.sqrt(dx*dx+dy*dy);
+		    if (len > 1e-5) {
+		    dx *= 0.5*radius *res[0] / len;
+		    dy *= 0.5*radius *res[1] / len;
+		    plotdata.push([x-dx, y-dy],[x+dx, y+dy],[]);
+		    }
+		    } else {
+		    if (isPolar()) { // polar ODE
+		    pol = polarConvert(x,y);
+		            dr = _fn[5](pol[1],pol[0]);
+                    dx = ( dr * Math.cos(pol[1]) - y )*res[1];
+                    dy = ( dr * Math.sin(pol[1]) + x )*res[0];
+                    len = Math.sqrt(dx*dx+dy*dy);
+                    if (len > 1e-5) {
+                        dx *= radius *res[0] / len;
+                        dy *= radius *res[1] / len;
+                        plotdata.push([x-dx, y-dy],[x+dx, y+dy],[]);
+                    }
+		    } else {
+                    slope = _fn[0](x,y);
+                    if (!isNaN(slope)) {
+                        if (isFinite(slope)) {
+                            dx = res[0]*res[1]/Math.sqrt(res[1]*res[1]+slope*slope*res[0]*res[0]);
+                            dy = slope * dx;
+                        } else {
+                            dx = 0; dy = res[1];
+                        }
+                        dx *= radius; dy *=radius;
+                        plotdata.push([x-dx, y-dy],[x+dx, y+dy],[]);
+                    }
+		    }
+		    }
+		    }
+		    }
+		    slopeData = [ 
+		    (ymin <= 0 && ymax >= 0 ? {data: [[xmin,0],[xmax,0]], shadowSize: 0} : []),
+		    (xmin <= 0 && xmax >= 0 ? {data: [[0,ymin],[0,ymax]], shadowSize: 0} : []),
+		    {data: plotdata,
+		    lines: {show:true, fill:false, lineWidth:1},
+		    points: (isSystem()
+		        ? {show: true, symbol: arrow, fillColor: '#808080', lineWidth: 0, fill:1} 
+			    : {show: false}
+			    ),
+			    shadowSize:0
+			    }
+			    ];
+}
+
+
+/*
+K is a (dynamically defined) function used in the makeCurve function
+K = function(x, y, k0, h), or function([t,x,y], h)
+for ODE, returns 2, 3, or 5 numbers
+for SYS, returns 2, 3, or 5 arrays (each with two numbers)
+[k0, delta]for Euler
+[k0, k1, delta]for midpoint and improved Euler
+[k0, k1, k2, k3, delta] for RK4 and RK3/8
+*/
+
+function changeMethod() {
+METHOD = getFormValue('method'); //$("#method")[0].value;
+if (!isSystem()) {
+        f = (MODE == 0 ? _fn[0] : _fn[5]);
+        switch(METHOD) {
+            case "euler":
+                K = function(x,y,k0,h) {
+                    return [k0, h*k0];
+                }
+                break;
+            case "impeuler": // aka Heun's method (trapezoidal rule)
+                K = function(x,y,k0,h) {
+                    var k1 = f(x+h,y+h*k0);
+                    return [k0, k1, h*(k0+k1)/2];
+                }
+                break;
+            case "midpt":
+                K = function(x,y,k0,h) {
+                    var k1 = f(x+h/2,y+h*k0/2);
+                    return [k0, k1, h*k1];
+                }
+                break;
+            case "rk4":
+                K = function(x,y,k0,h) {
+                    var k1 = f(x+h/2,y+h*k0/2),
+                        k2 = f(x+h/2,y+h*k1/2),
+                        k3 = f(x+h,y+h*k2);
+                    return [k0, k1, k2, k3, (k0+2*k1+2*k2+k3)*h/6];
+                }
+                break;
+            case "rk38":
+                K = function(x,y,k0,h) {
+                    var k1 = f(x+h/3,y+h*k0/3),
+                        k2 = f(x+2*h/3,y-h*k0/3+h*k1),
+                        k3 = f(x+h,y+h*(k0-k1+k2));
+                    return [k0, k1, k2, k3, (k0+3*k1+3*k2+k3)*h/8];
+                }
+                break;
+        }
+	} else {
+	    if (!isPolar())
+	    f = function(t,x,y){ return[1, _fn[1](t,x,y), _fn[2](t,x,y)] };
+	    else
+            f = function(t,x,y){ return[1, _fn[3](t,x,y), _fn[4](t,x,y)] };
+	    ff = function(X) { return f.apply(this,X); }
+	    switch(METHOD) {
+	    case "euler":
+	    K = function(X, h) {
+	    var k = ff(X);
+	    return [k, k.timesConst(h)].map(function(t){return t.slice(1);});
+	    }
+	    break;
+	    case "impeuler": // aka Heun's method (trapezoidal rule)
+	    K = function(X, h) {
+	    var k0 = ff(X),
+	    k1 = ff(X.add(k0, h)),
+	    delta = k0.add(k1).timesConst(h/2);
+	    return [k0, k1, delta].map(function(t){return t.slice(1);});
+	    }
+	    break;
+	    case "midpt":
+	    K = function(X, h) {
+	    var k0 = ff(X),
+	    k1 = ff(X.add(k0, h/2)),
+	    delta = k1.timesConst(h);
+	    return [k0, k1, delta].map(function(t){return t.slice(1);});
+	    }
+	    break;
+	    case "rk4":
+	    K = function(X, h) {
+	    var k0 = ff(X),
+	    k1 = ff(X.add(k0, h/2)),
+	    k2 = ff(X.add(k1, h/2)),
+	    k3 = ff(X.add(k2, h)),
+	    delta = k0.add(k1,2).add(k2,2).add(k3).timesConst(h/6);
+	    return [k0, k1, k2, k3, delta].map(function(t){return t.slice(1);});
+	    }
+	    break;
+	    case "rk38":
+	    K = function(X, h) {
+	    var k0 = ff(X),
+	    k1 = ff(X.add(k0, h/3)),
+	    k2 = ff(X.add(k0, -h/3).add(k1,h)),
+	    k3 = ff(X.add(k0,h).add(k1,-h).add(k2, h)),
+	    delta = k0.add(k1,3).add(k2,3).add(k3).timesConst(h/8);
+	    return [k0, k1, k2, k3, delta].map(function(t){return t.slice(1);});
+	    }
+	    break;
+	    }
+	    }
+}
+
+function changeCurves() {
+var h = getNumValue('stepSize');
+if (h == 0 || !isValid(h)) {
+$('#stepSize').addClass('input-BAD');
+} else {
+$('#stepSize').removeClass('input-BAD');
+updateCurveData();
+redrawGraph();
+}
+updateLink();
+}
+
+function lockUnlockT(o) {
+lockT = o.checked;
+if (lockT) {
+$('#pan').addClass('invisible');
+var h = getNumValue('stepSize');
+TIMEPLOT.getOptions().xaxes[0].min = tmin = 0;
+TIMEPLOT.getOptions().xaxes[0].max = tmax = Math.max(tmax, 10*h);
+TIMEPLOT.setupGrid();
+TIMEPLOT.draw();
+} else
+$('#pan').removeClass('invisible');
+}
+
+
+// tmin, tmax, tcount are global
+// x = [[t0,x0], [t1,x1], ...]
+// y = [[t0,y0], [t1,y1], ...]
+function morePoints(x, y, h) {
+var tmp, t = x[0][0], tc = tcount;
+while (t > tmin) {
+tmp = K( [t,x[0][1],y[0][1]], -h).slice(-1)[0]; // = [delX, delY]
+x.unshift([t -= h, x[0][1]+tmp[0]]);
+y.unshift([t, y[0][1]+tmp[1]]);
+tcount++;
+}
+t = x[tcount][0];
+while (t < tmax) {
+tmp = K( [t,x[tcount][1],y[tcount][1]], h).slice(-1)[0]; // = [delX, delY]
+x.push([t += h, x[tcount][1]+tmp[0]]);
+y.push([t, y[tcount][1]+tmp[1]]);
+tcount++;
+}
+return tc != tcount; // true if points added
+}
+
+function zoom(x) {
+if (timeplotData[0].equilibrium) return; // no pan/zoom for EQ points
+var h = getNumValue('stepSize'), tmp, t, x, y;
+if (x < 0) { // zoom out
+if (lockT) {
+tmax = tmax * 1.1;
+} else {
+tmp = 1.05 * tmin - 0.05 * tmax;
+tmax = 1.05 * tmax - 0.05 * tmin;
+tmin = tmp;
+}
+} else {
+if (lockT) {
+tmax = tmax / 1.1;
+} else {
+tmp = 0.955 * tmin + 0.045 * tmax;
+tmax = 0.955 * tmax + 0.045 * tmin;
+tmin = tmp;
+}
+}
+tmax = Math.ceil(tmax / h) * h;
+tmin = Math.floor(tmin / h) * h;
+if (morePoints(timeplotData[0].data, timeplotData[1].data, h))
+TIMEPLOT.setData(timeplotData);
+TIMEPLOT.getOptions().xaxes[0].min = tmin;
+TIMEPLOT.getOptions().xaxes[0].max = tmax;
+TIMEPLOT.setupGrid();
+TIMEPLOT.draw();
+}
+
+function pan(x) {
+if (lockT || timeplotData[0].equilibrium) return; // no pan/zoom for EQ points
+var h = getNumValue('stepSize'),
+gap = Math.ceil(0.2 * (tmax - tmin) / h);
+if (gap < 2) gap = 2;
+gap *= h;
+if (x < 0) {
+tmin -= gap; tmax -= gap;
+} else {
+tmin += gap; tmax += gap;
+}
+if (morePoints(timeplotData[0].data, timeplotData[1].data, h))
+TIMEPLOT.setData(timeplotData);
+TIMEPLOT.getOptions().xaxes[0].min = tmin;
+TIMEPLOT.getOptions().xaxes[0].max = tmax;
+TIMEPLOT.setupGrid();
+TIMEPLOT.draw();
+}
+
+function isOutOfBounds(pt, flag) {
+    if (isPolar() && !flag) {
+        pt = rectConvert(pt[0],pt[1]);
+    }
+    return (pt[0]<xmin || pt[0]>xmax || pt[1]<ymin || pt[1]>ymax);
+}
+
+function updateCurveData() {
+curveData = [];
+var x, y, i, j;
+for (j=0; j<4; j++) {
+for (i=0; i<pointList[j].length; i++) {
+x = pointList[j][i][0]; y = pointList[j][i][1];
+if (isOutOfBounds(pointList[j][i])) {
+pointList[j].splice(i,1);
+if (j==MODE) {
+if (selectObj.selectedIndex==i && i>0)
+selectObj.selectedIndex--;
+								  selectObj.remove(i--);
+								  }
+								  } else if (j==MODE) {
+								  curveData.push(makeCurve(pointList[j][i], i == selectObj.selectedIndex));
+								  if (i == selectObj.selectedIndex)
+								  showTable(curveData[i]); // show/hide columns, and make time plot
+								  }
+								  }
+								  }
+								  if (selectObj.selectedIndex == -1) showTable(-1); // make sure to clear out the old.
+								  //showTable(selectObj.selectedIndex); // if all pts were removed, selectedIndex = -1
+}
+
+/*
+								  i is EITHER the index of the point for which you want to make the table, or
+								  an objeo make a timeplot (in which case the table
+								  has already been constructed).
+*/
+function showTable(i) {
+								  // make table, if not already done:
+								  if (typeof(i) == 'number')
+								  makeCurve(i<0 ? [] : pointList[MODE][i], true);
+										if (HIDESTATE  if (max1 < timeplotData[0][j][1])
+													              max1 = timeplotData[0][j][1];
+													          if (min2 > timeplotData[1][j][1])
+										            min2 = timeplotData[1][j][1];
+										if (max2 < timeplotickLength: 10,
+											   font: { color: 'red', weight: 'bold' }
+											   },{
+											   tickColor: 'blue',
+											   min: min2,
+											   max: max2,
+											   tickLength: 10,
+											   font: { color: 'blue', weight: 'bold' }
+											   //position: "right",
+											   }],
+											   legend: { position: 'nw' },
+											   grid: {
+											   hoverable: true,
+											   autoHighy += h
+											   Swap x' for y' (DO NOT negate h, so h < 0)
+																   y'>0move left and down: y += h*y', x += h
+																   Q3y'<0move left and up: y += h*y', x += h
+																   ... swap y' for x' (negate h; now h > 0)
+											   x'<0move left and up: x += h*x', y += h
+etc.
+*/
+
+function math(s) {
+											   var t = s.replace(/\'/g,'&prime;')
+															    .replace(/_(.)/g,'<sub>$1</sub>')
+																			    .replace(/\^(.)/g,'<sup>$1</sup>')
+																							     .replace('DEL', '&Delta;')
+																										      .replace(/\b([a-z])\b/g,'<i>$1</i>')
+																															 .replace('x', 'X').replace('y', 'Y')
+																																			    .replace('X', isPolarODE() ? 'θ' : INDEP).replace('Y', isPolarODE() ? 'r' : DEP);
+																																												     return t;
+}
+
+function th(x,cls){
+return (cls ? '<th(th).addClass("hidden");
+		  else
+		  T.find("tbody tr td:nth-child(" + n + ")").add(th).removeClass("hidden");
+		  }
+		  var wid = (80*COLS+20) - (HIDESTATE ? 80*HIDDEN : 0);
+		  document.getElementById("tableContainer").style.width = wid+'px';
+		  $('#arrow').html(HIDESTATE ? '&nbsp;&rArr;' : '&nbsp;&lArr;');
+		  $('#arrow').prop('title', HIDESTATE ? 'show details' : 'hide details');
+}
+
+function isSystem() { return MODE == 1 || MODE == 2; }
+function isPolar() { return MODE > 1; }
+function isPolarODE() { return MODE == 3; }
+
+function tableHeader() {
+											   var html = '<tr>'
+											       + (isSystem() ? '<th id="timeH"><em>t</em></th>' : k;
+											   case 'rk4':
+											   case 'rk38':
+											   for (i=1; i<5; i++) {
+													  html += (!isSystem() ?
+													  thtoggle(math("k_" + i)) :
+													  thtoggle(math("k_" + i + "(x)")) + thtoggle(math("k_" + i + "(y)")));
+													  }
+													  break;
+													  //case 'rkf': // R-K-Fehlberg
+													  //break;
+													  }
+													  ht
+													  if (pt.length==0) {
+													  $('#tblBody').html('<tr><td colspan=' + COLS +
+													  ' style="width:' + (COLS*80) +
+													  'px;text-align:center">Add initial values to plot to create a table</td></tr>');
+													  return;
+													  }
+													  html = '';
+													  }
+    // polar points are stored as (r,theta), but for DE purposes, r is the dependent variable
+													  data = [isPolar() ? rectConvert(pt[0],pt[1]) : pt]
+													  for (i=0; i<2; i++, h = -h1) {
+															 if (i && isSystem() && lockT) break;
+															 x = pt[0];
+															 y = pt[1];
+															 prev = (isPolar() ? rectConvert(x,y) : pt);
+															 t = 0; // only used for systems
+															 if (flag) {
+															 if (i>0) html += '<tr><td colspan=' + Math.ceil(COLS) + '><hr/></td></tr>';
+													  html += '<tr>' +
+													  (isSystem() ? '<td class="time">'+genNumber(t,3)+'</td>': '') + tblNum([x,y]);
+													  }
+													  dxdy = false;
+													  if (MODE==0) f = _fn[0]; // reset f, in case it ha                           var tr = html.lastIndexOf('<tr>');
+                            html = html.substr(0,tr) + 
+                                '<tr><td colspan=' + Math.ceil(COLS) +
+                                ' style="text-align:left"><b>Switch variables</b> (' +
+                                math("y'") + '= ' + genNumber(k) + ')</td></tr>' +
+                                html.substr(tr);
+                        }
+                        f = ((dxdy = !dxdy) ? function(a,b){return k.length-1];
+                    x += delta[0];
+                    y += delta[1];
+                    t += h;
+                    // added Feb 2016 to detect equilibrium points
+                    totaldelta = Math.sqrt(delta[0]*delta[0] + delta[1]*delta[1]);
+               nterpolate to the edge of the canvas
+													  if (tmp[0] < xmin)
+														       tmp = [xmin, tmp[1] + (tmp[1]-prev[1])*(xmin - tmp[0])/(tmp[0]-prev[0])];
+														       else if (tmp[0] > xmax)
+													  tmp = [xmax, tmp[1] + (tmp[1]-prev[1])*(xmax - tmp[0])/(tmp[0]-prev[0])];
+													  if (i) { // moving backward
+													  data.unshift(tmp);
+													  } else {
+													  data.push(tmp);
+													  }
+													  prev = tmp;
+													  if (totaldelta == 0) { // added Feb 2016 to detect equilibrium points
+													  if (flag)
+													  html = html.slice(0, html.lastIndexOf('<tr>')) +
+													  '<tr><td colspan=' + Math.ceil(COLS) + '>EQUILIBRIUM POINT</td>';
+													  break;
+													  }
+
+													  } while (n++<1000 &&
+															    tmp[0] > xmin && tmp[0] < xmax &&
+																		      tmp[1] > ymin-2*range && tmp[1] < ymax+2*range);
+																							}
+																							
+																							if (flag) $('#tblBody' > 0)
+													  selectObj.remove(0);
+													  for (i=0; i<pointList[MODE].length; i++) {
+																	      option = document.createElement("opttList[MODE].length; i++)
+																					       if (dist(pt, pointList[MODE][i]) < delta) return;
+																					       pointList[MODE].push(pt);
+																					       var option = document.createElement("option");
+																											   option.te[1].data;
+																											   var i = tcount * (t - x[0][0]) / (x[tcount][0] - x[0][0]);
+																											   var frac = i - Math.floor(i);
+																											   i = Math.floor(i);
+																											       x = x[i][1] * (1-frac) + x[i+1][1] *K = false;
+            $('#xcoord').addClass('input-BAD');
+        }
+        if (isNaN(y) || y < ymin || y > ymax) {
+            OK = false;
+            $('#ycoord').addClass('input-BAD');
+        }
+    } else {
+        if (isNaN(x)) {
+            OK = false;
+            $('#xcoord').addClass('input-BAD');
+        }
+        if (isNaN(y)) {
+            OK = false;
+            $('#ycoord').addClass('input-BAD');
+        }
+        if (OK) {
+            OK = !isOutOfBounds([x,y]);
+            if (.getCanvas().toDataURL();
+	    var w = window.open();
+	    w.document.location.href = image;
+}
+
+var PLOT, TIMEPLOT;
+//TODO -- force display of correct window even if axes not displayed.
+function redrawGraph() {
+if (!ready) return;
+options = { 
+canvas: true,
+colors: colorList,
+xaxis: {
+shadowSize: 0,
+lineWidth:1,
+tickLength: 0
+},
+yaxis: {
+min: ymin - range/100,
+max: ymax + range/100,
+tickLength: 0
+},
+grid: {
+hoverable: true,
+clickable: true,
+autoHighlight: false
+}
+};
+PLOT = $.plot('#plotdiv', slopeData.concat(curveData), options);
+$('#thumbLink')[0].href = $('#thumb')[0].src = PLOT.getCanvas().toDataURL();
+//$('#thumbLink')    //console.log("changeSlopeInput: " + [e.target.value, ui.value]);
+    if ($('#'+e.target.id).spinner('isValid')) {
+        changeSlopes(e, {value: e.target.vk;
+	}
+	if (xmin > xmax) {
+	tmp = xmin; xmin = xmax; xmax = tmp;
+	tmp = getFormValue('xLow');
+	setFormValue('xLow', getFormValue('xHigh'));
+	setFormValue('xHigh', tmp);
+	} else if (ymin > ymax) {
+	tmp = ymin; ymin = ymax; yr range = document.createRange();
+        range.selectNodeContents(element);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+}
+$(".copyable").click(function (e) {
+    //Make the container Div contenteditable
+    $(this).attr("contenteditable", true);
+    //Select the image
+    SelectText($(this).get(0));
+    //Execute copy Command
+    //Note: This will ONLY work directly inside a click listener
+    document
